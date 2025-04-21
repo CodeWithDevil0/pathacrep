@@ -108,7 +108,7 @@
       "Buns Max": 10.5
     };
 
-    const PASSWORD_HEX = "707463"; // "ptc"
+    const PASSWORD_HEX = "707463";
     const PASSWORD = PASSWORD_HEX.match(/.{1,2}/g).map(b => String.fromCharCode(parseInt(b, 16))).join('');
 
     const buttons = document.querySelectorAll(".product-btn");
