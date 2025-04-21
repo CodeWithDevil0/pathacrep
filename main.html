@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Caisse Multi-Produits</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: auto;
+      padding: 2rem;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 1rem;
+    }
+
+    .product-btn {
+      padding: 1rem;
+      background-color: #eee;
+      border: 2px solid transparent;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: 0.2s ease;
+    }
+
+    .product-btn.selected {
+      border: 2px solid #4CAF50;
+      background-color: #d8ffd8;
+    }
+
+    .preview, .stock {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧾 Interface Caisse - Multi Produits</h1>
+
+  <label>Montant reçu (€) :</label>
+  <input type="number" id="amount" step="0.01" placeholder="Ex: 20.00">
+
+  <label>Sélectionnez les produits :</label>
+  <div class="products" id="productButtons">
+    <button class="product-btn" data-name="Poffertjes Simple">Poffertjes Simple<br>4.50€</button>
+    <button class="product-btn" data-name="Poffertjes Gourmet">Poffertjes Gourmet<br>7.00€</button>
+    <button class="product-btn" data-name="Poffertjes Max">Poffertjes Max<br>9.00€</button>
+    <button class="product-btn" data-name="Buns Simple">Buns Simple<br>6.00€</button>
+    <button class="product-btn" data-name="Buns PDT">Buns PDT<br>8.50€</button>
+    <button class="product-btn" data-name="Buns Max">Buns Max<br>10.50€</button>
+  </div>
+
+  <div class="preview" id="preview">
+    ➕ Entrez un montant et sélectionnez un ou plusieurs produits.
+  </div>
+
+  <button onclick="confirmSale()">Confirmer la vente</button>
+
+  <div id="passwordPrompt" style="display:none;">
+    <label>Mot de passe :</label>
+    <input type="password" id="passwordInput">
+    <button onclick="validatePassword()">Valider</button>
+    <div id="passwordError" class="error"></div>
+  </div>
+
+  <div class="stock">
+    <h3>📦 Ventes enregistrées :</h3>
+    <ul id="salesList"></ul>
+  </div>
+
+  <script>
+    const prices = {
+      "Poffertjes Simple": 4.5,
+      "Poffertjes Gourmet": 7.0,
+      "Poffertjes Max": 9.0,
+      "Buns Simple": 6.0,
+      "Buns PDT": 8.5,
+      "Buns Max": 10.5
+    };
+
+    const PASSWORD_HEX = "707463"; // "ptc"
+    const PASSWORD = PASSWORD_HEX.match(/.{1,2}/g).map(b => String.fromCharCode(parseInt(b, 16))).join('');
+
+    const buttons = document.querySelectorAll(".product-btn");
+    const preview = document.getElementById("preview");
+    const salesList = document.getElementById("salesList");
+    let cart = [];
+
+    const amountInput = document.getElementById("amount");
+    amountInput.addEventListener("input", updatePreview);
+
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const product = btn.dataset.name;
+        if (cart.includes(product)) {
+          cart = cart.filter(p => p !== product);
+          btn.classList.remove("selected");
+        } else {
+          cart.push(product);
+          btn.classList.add("selected");
+        }
+        updatePreview();
+      });
+    });
+
+    function updatePreview() {
+      const amount = parseFloat(amountInput.value);
+      if (cart.length === 0 || isNaN(amount)) {
+        preview.innerHTML = "➕ Entrez un montant et sélectionnez un ou plusieurs produits.";
+        return;
+      }
+
+      const total = cart.reduce((sum, p) => sum + prices[p], 0);
+      const change = (amount - total).toFixed(2);
+      preview.innerHTML = `
+        Produits : <strong>${cart.join(', ')}</strong><br>
+        Total : <strong>${total.toFixed(2)}€</strong><br>
+        Rendu monnaie : <strong>${change}€</strong>
+      `;
+    }
+
+    function confirmSale() {
+      if (cart.length === 0 || isNaN(parseFloat(amountInput.value))) {
+        alert("Veuillez entrer un montant et sélectionner au moins un produit.");
+        return;
+      }
+      document.getElementById("passwordPrompt").style.display = "block";
+    }
+
+    function validatePassword() {
+      const inputPass = document.getElementById("passwordInput").value;
+      const errorBox = document.getElementById("passwordError");
+
+      if (inputPass === PASSWORD) {
+        addToSales();
+        document.getElementById("passwordPrompt").style.display = "none";
+        document.getElementById("passwordInput").value = "";
+        errorBox.textContent = "";
+      } else {
+        errorBox.textContent = "Mot de passe incorrect.";
+      }
+    }
+
+    function addToSales() {
+      const amount = parseFloat(amountInput.value);
+      const total = cart.reduce((sum, p) => sum + prices[p], 0);
+      const entry = {
+        products: [...cart],
+        total: total.toFixed(2),
+        paid: amount.toFixed(2),
+        date: new Date().toLocaleString()
+      };
+
+      // afficher
+      const li = document.createElement("li");
+      li.textContent = `${entry.date} - ${entry.products.join(', ')} | ${entry.total}€ payé: ${entry.paid}€`;
+      salesList.appendChild(li);
+
+      // sauvegarder
+      const sales = JSON.parse(localStorage.getItem("sales") || "[]");
+      sales.push(entry);
+      localStorage.setItem("sales", JSON.stringify(sales));
+
+      // reset
+      cart = [];
+      buttons.forEach(b => b.classList.remove("selected"));
+      amountInput.value = "";
+      updatePreview();
+    }
+
+    function loadSales() {
+      const sales = JSON.parse(localStorage.getItem("sales") || "[]");
+      sales.forEach(entry => {
+        const li = document.createElement("li");
+        li.textContent = `${entry.date} - ${entry.products.join(', ')} | ${entry.total}€ payé: ${entry.paid}€`;
+        salesList.appendChild(li);
+      });
+    }
+
+    // au chargement
+    loadSales();
+  </script>
+</body>
+</html>
