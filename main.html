@@ -11,16 +11,13 @@
       padding: 2rem;
       background-color: #f9f9f9;
     }
-
     h1 {
       text-align: center;
     }
-
     label {
       display: block;
       margin-top: 1rem;
     }
-
     input, button {
       width: 100%;
       padding: 10px;
@@ -28,14 +25,12 @@
       border-radius: 5px;
       border: 1px solid #ccc;
     }
-
     .products {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 10px;
       margin-top: 1rem;
     }
-
     .product-btn {
       padding: 1rem;
       background-color: #eee;
@@ -45,12 +40,10 @@
       border-radius: 8px;
       transition: 0.2s ease;
     }
-
     .product-btn.selected {
       border: 2px solid #4CAF50;
       background-color: #d8ffd8;
     }
-
     .preview, .stock {
       margin-top: 2rem;
       padding: 1rem;
@@ -58,44 +51,68 @@
       border: 1px solid #ddd;
       border-radius: 8px;
     }
-
     .error {
       color: red;
+    }
+    .login-container {
+      width: 300px;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin: auto;
+      text-align: center;
+    }
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h1>🧾 Interface Caisse - Multi Produits</h1>
 
-  <label>Montant reçu (€) :</label>
-  <input type="number" id="amount" step="0.01" placeholder="Ex: 20.00">
-
-  <label>Sélectionnez les produits :</label>
-  <div class="products" id="productButtons">
-    <button class="product-btn" data-name="Poffertjes Simple">Poffertjes Simple<br>4.50€</button>
-    <button class="product-btn" data-name="Poffertjes Gourmet">Poffertjes Gourmet<br>7.00€</button>
-    <button class="product-btn" data-name="Poffertjes Max">Poffertjes Max<br>9.00€</button>
-    <button class="product-btn" data-name="Buns Simple">Buns Simple<br>6.00€</button>
-    <button class="product-btn" data-name="Buns PDT">Buns PDT<br>8.50€</button>
-    <button class="product-btn" data-name="Buns Max">Buns Max<br>10.50€</button>
+  <div id="loginPage" class="login-container">
+    <h2>🛡️ Accéder à la Caisse</h2>
+    <label for="passwordInput">Mot de passe :</label>
+    <input type="password" id="passwordInput" placeholder="Entrez le mot de passe">
+    <button onclick="validateLogin()">Se connecter</button>
+    <div id="error" class="error"></div>
   </div>
 
-  <div class="preview" id="preview">
-    ➕ Entrez un montant et sélectionnez un ou plusieurs produits.
-  </div>
+  <div id="caissePage" class="hidden">
+    <h1>🧾 Interface Caisse - Multi Produits</h1>
 
-  <button onclick="confirmSale()">Confirmer la vente</button>
+    <label>Montant reçu (€) :</label>
+    <input type="number" id="amount" step="0.01" placeholder="Ex: 20.00">
 
-  <div id="passwordPrompt" style="display:none;">
-    <label>Mot de passe :</label>
-    <input type="password" id="passwordInput">
-    <button onclick="validatePassword()">Valider</button>
-    <div id="passwordError" class="error"></div>
-  </div>
+    <label>Sélectionnez les produits :</label>
+    <div class="products" id="productButtons">
+      <button class="product-btn" data-name="Poffertjes Simple">Poffertjes Simple<br>4.50€</button>
+      <button class="product-btn" data-name="Poffertjes Gourmet">Poffertjes Gourmet<br>7.00€</button>
+      <button class="product-btn" data-name="Poffertjes Max">Poffertjes Max<br>9.00€</button>
+      <button class="product-btn" data-name="Buns Simple">Buns Simple<br>6.00€</button>
+      <button class="product-btn" data-name="Buns PDT">Buns PDT<br>8.50€</button>
+      <button class="product-btn" data-name="Buns Max">Buns Max<br>10.50€</button>
+    </div>
 
-  <div class="stock">
-    <h3>📦 Ventes enregistrées :</h3>
-    <ul id="salesList"></ul>
+    <div class="preview" id="preview">
+      ➕ Entrez un montant et sélectionnez un ou plusieurs produits.
+    </div>
+
+    <button onclick="confirmSale()">Confirmer la vente</button>
+
+    <div id="passwordPrompt" style="display:none;">
+      <label>Mot de passe :</label>
+      <input type="password" id="passwordInputConfirm">
+      <button onclick="validatePassword()">Valider</button>
+      <div id="passwordError" class="error"></div>
+    </div>
+
+    <div class="stock">
+      <h3>📦 Ventes enregistrées :</h3>
+      <ul id="salesList"></ul>
+    </div>
+
+    <button onclick="resetSalesPrompt()">Réinitialiser les ventes</button>
   </div>
 
   <script>
@@ -108,8 +125,10 @@
       "Buns Max": 10.5
     };
 
-    const PASSWORD_HEX = "707463";
-    const PASSWORD = PASSWORD_HEX.match(/.{1,2}/g).map(b => String.fromCharCode(parseInt(b, 16))).join('');
+    function generateSecretKey() {
+      return String.fromCharCode(112, 116, 99);
+    }
+    const secretKey = generateSecretKey();
 
     const buttons = document.querySelectorAll(".product-btn");
     const preview = document.getElementById("preview");
@@ -149,6 +168,20 @@
       `;
     }
 
+    function validateLogin() {
+      const passwordInput = document.getElementById("passwordInput").value;
+      const errorBox = document.getElementById("error");
+
+      if (passwordInput === secretKey) {
+        localStorage.setItem("loggedIn", "true");
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("caissePage").classList.remove("hidden");
+        loadSales();
+      } else {
+        errorBox.textContent = "Mot de passe incorrect.";
+      }
+    }
+
     function confirmSale() {
       if (cart.length === 0 || isNaN(parseFloat(amountInput.value))) {
         alert("Veuillez entrer un montant et sélectionner au moins un produit.");
@@ -158,13 +191,13 @@
     }
 
     function validatePassword() {
-      const inputPass = document.getElementById("passwordInput").value;
+      const inputPass = document.getElementById("passwordInputConfirm").value;
       const errorBox = document.getElementById("passwordError");
 
-      if (inputPass === PASSWORD) {
+      if (inputPass === secretKey) {
         addToSales();
         document.getElementById("passwordPrompt").style.display = "none";
-        document.getElementById("passwordInput").value = "";
+        document.getElementById("passwordInputConfirm").value = "";
         errorBox.textContent = "";
       } else {
         errorBox.textContent = "Mot de passe incorrect.";
@@ -181,17 +214,14 @@
         date: new Date().toLocaleString()
       };
 
-      // afficher
       const li = document.createElement("li");
       li.textContent = `${entry.date} - ${entry.products.join(', ')} | ${entry.total}€ payé: ${entry.paid}€`;
       salesList.appendChild(li);
 
-      // sauvegarder
       const sales = JSON.parse(localStorage.getItem("sales") || "[]");
       sales.push(entry);
       localStorage.setItem("sales", JSON.stringify(sales));
 
-      // reset
       cart = [];
       buttons.forEach(b => b.classList.remove("selected"));
       amountInput.value = "";
@@ -207,8 +237,31 @@
       });
     }
 
-    // au chargement
-    loadSales();
+    function resetSalesPrompt() {
+      const passwordPrompt = document.createElement('div');
+      passwordPrompt.innerHTML = `
+        <label>Mot de passe pour réinitialiser :</label>
+        <input type="password" id="resetPasswordInput">
+        <button onclick="resetSales()">Valider</button>
+        <div id="resetPasswordError" class="error"></div>
+      `;
+      document.body.appendChild(passwordPrompt);
+    }
+
+    function resetSales() {
+      const resetPasswordInput = document.getElementById("resetPasswordInput").value;
+      const errorBox = document.getElementById("resetPasswordError");
+
+      if (resetPasswordInput === secretKey) {
+        localStorage.removeItem("sales");
+        salesList.innerHTML = "";
+        document.getElementById("resetPasswordError").textContent = "";
+        document.body.removeChild(document.getElementById("resetPasswordInput").parentElement);
+      } else {
+        errorBox.textContent = "Mot de passe incorrect.";
+      }
+    }
   </script>
+
 </body>
 </html>
